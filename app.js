@@ -13,6 +13,8 @@ const els = {
   accuracy: document.querySelector('#accuracy'), finalAccuracy: document.querySelector('#finalAccuracy'), modeLength: document.querySelector('#modeLength'), stage: document.querySelector('#testStage'),
   card: document.querySelector('#resultCard'), finalWpm: document.querySelector('#finalWpm'), resultCopy: document.querySelector('#resultCopy'), language: document.querySelector('#languageSelect'), typingSound: document.querySelector('#typingSound'), errorSound: document.querySelector('#errorSound'), soundToggle: document.querySelector('#soundToggle')
 };
+// Safety net: if the page and script ever get out of sync, a missing element must never stop the words from showing.
+for (const key in els) if (!els[key]) els[key] = document.createElement('span');
 let duration = 60, testWords = [], typedWords = [], startedAt = null, interval = null, finished = false, firstLineWordCount = 1, completedCount = 0, totalKeys = 0, errorKeys = 0, soundsMuted = false;
 const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 let firstLoad = true;
@@ -121,12 +123,14 @@ els.words.addEventListener('keydown', event => {
 mobileInput.addEventListener('input', () => {
   if (finished) { mobileInput.value = SENT; return; }
   const value = mobileInput.value;
-  if (!value.startsWith(SENT)) handleBackspace();
-  else for (const ch of value.slice(1)) { if (finished) break; if (ch === ' ' || ch === ' ') handleSpace(); else handleChar(ch); }
+  if (!value.includes(SENT)) handleBackspace();
+  else for (const ch of value.replace(SENT, '')) { if (finished) break; if (ch === ' ' || ch === ' ') handleSpace(); else handleChar(ch); }
   mobileInput.value = SENT;
   try { mobileInput.setSelectionRange(1, 1); } catch (e) {}
 });
-mobileInput.addEventListener('focus', () => els.words.classList.add('input-focused'));
+const parkCaret = () => { if (document.activeElement === mobileInput && mobileInput.selectionStart !== mobileInput.value.length) { try { mobileInput.setSelectionRange(mobileInput.value.length, mobileInput.value.length); } catch (e) {} } };
+document.addEventListener('selectionchange', parkCaret);
+mobileInput.addEventListener('focus', () => { els.words.classList.add('input-focused'); setTimeout(parkCaret, 0); });
 mobileInput.addEventListener('blur', () => els.words.classList.remove('input-focused'));
 els.words.addEventListener('click', focusTyping);
 els.soundToggle.addEventListener('click', () => { soundsMuted=!soundsMuted; els.soundToggle.setAttribute('aria-pressed', soundsMuted); els.soundToggle.setAttribute('aria-label', soundsMuted ? 'Unmute typing sounds' : 'Mute typing sounds'); els.soundToggle.innerHTML=soundsMuted ? '🔇 <span>Sound off</span>' : '🔊 <span>Sound on</span>'; });

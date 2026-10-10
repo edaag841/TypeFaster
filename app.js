@@ -13,20 +13,27 @@ const els = {
   characters: document.querySelector('#characters'), modeLength: document.querySelector('#modeLength'), stage: document.querySelector('#testStage'),
   card: document.querySelector('#resultCard'), finalWpm: document.querySelector('#finalWpm'), resultCopy: document.querySelector('#resultCopy'), language: document.querySelector('#languageSelect'), typingSound: document.querySelector('#typingSound'), errorSound: document.querySelector('#errorSound'), soundToggle: document.querySelector('#soundToggle')
 };
-let duration = 30, testWords = [], startedAt = null, interval = null, finished = false, firstLineWordCount = 1, completedCount = 0, acceptedCharacters = 0, soundsMuted = false;
+let duration = 60, testWords = [], typedWords = [], startedAt = null, interval = null, finished = false, firstLineWordCount = 1, completedCount = 0, totalKeys = 0, errorKeys = 0, soundsMuted = false;
 function pickWords() { const wordBank = wordBanks[els.language.value].split(' '); return Array.from({length: 76}, () => wordBank[Math.floor(Math.random() * wordBank.length)]); }
 function playSound(sound, volume = 0.35) { if (soundsMuted) return; sound.pause(); sound.currentTime = 0; sound.volume = volume; sound.play().catch(() => {}); }
+function letterSpans(word, typed, isCurrent) {
+  const out = [];
+  const len = Math.max(word.length, typed.length);
+  for (let i = 0; i < len; i++) {
+    const expected = word[i], got = typed[i];
+    if (expected === undefined) out.push(`<span class="typed-incorrect">${got}</span>`);
+    else if (got === undefined) out.push(`<span class="${isCurrent ? '' : 'typed-missing'}">${expected}</span>`);
+    else out.push(`<span class="${got === expected ? 'typed-correct' : 'typed-incorrect'}">${expected}</span>`);
+  }
+  return out.join('');
+}
 function renderWords() {
   els.words.innerHTML = testWords
-    .map((word, offset) => {
-      const index = offset;
-      const typedWord = index === completedCount ? [...els.input.value] : [];
-      const renderedWord = index === completedCount ? [...word].map((letter, charIndex) => {
-        const typedLetter = typedWord[charIndex];
-        const state = typedLetter === undefined ? '' : typedLetter === letter ? 'typed-correct' : 'typed-incorrect';
-        return `<span class="${state}">${letter}</span>`;
-      }).join('') : word;
-      return `<span class="word ${index === completedCount ? 'current' : ''}" data-index="${index}">${renderedWord}</span>`;
+    .map((word, index) => {
+      const isCurrent = index === completedCount;
+      const typed = isCurrent ? [...els.input.value] : index < completedCount ? [...(typedWords[index] || '')] : null;
+      const rendered = typed ? letterSpans([...word], typed, isCurrent) : word;
+      return `<span class="word ${isCurrent ? 'current' : ''}" data-index="${index}">${rendered}</span>`;
     }).join(' ');
 }
 function measureFirstLine() {
@@ -38,32 +45,57 @@ function measureFirstLine() {
 }
 function formatTime(sec) { return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
 function stats() {
-  const completed = completedCount;
-  const current = els.input.value;
-  let matchingCurrentChars = 0;
-  for (let i = 0; i < current.length && current[i] === (testWords[completed] || '')[i]; i++) matchingCurrentChars++;
-  const correctChars = acceptedCharacters + matchingCurrentChars;
-  const elapsed = startedAt ? Math.max((Date.now()-startedAt)/60000, 1/60) : 0;
+  const current = [...els.input.value];
+  let correctChars = 0, correctWords = 0;
+  for (let w = 0; w < completedCount; w++) {
+    const typed = [...(typedWords[w] || '')], ref = [...testWords[w]];
+    typed.forEach((ch, i) => { if (ch === ref[i]) correctChars++; });
+    if (typed.join('') === ref.join('')) { correctChars++; correctWords++; }
+  }
+  const ref = [...(testWords[completedCount] || '')];
+  current.forEach((ch, i) => { if (ch === ref[i]) correctChars++; });
+  const elapsedMs = startedAt ? Math.min(Date.now() - startedAt, duration * 1000) : 0;
+  const elapsed = elapsedMs ? Math.max(elapsedMs / 60000, 1 / 60) : 0;
   const wpm = elapsed ? Math.round((correctChars / 5) / elapsed) : 0;
-  return {completed, correctChars, wpm};
+  const accuracy = totalKeys ? Math.round((totalKeys - errorKeys) / totalKeys * 100) : 100;
+  return {completed: completedCount, correctWords, correctChars, wpm, accuracy, errors: errorKeys};
 }
 function update() {
   const s = stats();
   renderWords();
-  document.querySelectorAll('.word').forEach(node => {
-    const index = Number(node.dataset.index);
-    node.className = 'word';
-    if (index < s.completed) node.classList.add('correct');
-    else if (index === s.completed) node.classList.add('current');
-  });
-  els.wpm.textContent=s.wpm; els.completedWords.textContent=s.completed; els.characters.textContent=acceptedCharacters + els.input.value.length;
+  els.wpm.textContent = s.wpm; els.completedWords.textContent = s.correctWords; els.characters.textContent = totalKeys;
 }
 function start(){ if(startedAt || finished) return; startedAt=Date.now(); interval=setInterval(()=>{ const remaining=Math.max(0,duration-Math.floor((Date.now()-startedAt)/1000)); els.timer.textContent=formatTime(remaining); update(); if(!remaining) finish(); },250); }
-function finish(){ if(finished)return; finished=true; clearInterval(interval); els.input.disabled=true; update(); const s=stats(); els.finalWpm.textContent=s.wpm; els.resultCopy.textContent=`You completed ${s.completed} words without skipping a typo. Keep that rhythm going.`; els.card.classList.remove('hidden'); els.card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function reset(){ clearInterval(interval); testWords=pickWords(); startedAt=null; finished=false; completedCount=0;acceptedCharacters=0;els.input.disabled=false;els.input.value='';els.timer.textContent=formatTime(duration);els.wpm.textContent='0';els.completedWords.textContent='0';els.characters.textContent='0';els.modeLength.textContent=duration;els.card.classList.add('hidden');renderWords();requestAnimationFrame(()=>{measureFirstLine();els.words.focus();}); }
-function processTyping(){ const spaceIndex=els.input.value.indexOf(' '); if(spaceIndex !== -1){const typedWord=els.input.value.slice(0,spaceIndex);if(typedWord===testWords[completedCount]){completedCount++;acceptedCharacters+=typedWord.length+1;els.input.value='';}else{els.input.value=typedWord;}} start();update(); }
-els.input.addEventListener('input', processTyping);
-els.words.addEventListener('keydown', event => { if (event.ctrlKey || event.metaKey || event.altKey) return; if (event.key !== ' ') playSound(els.typingSound); if (event.key === ' ' && els.input.value && els.input.value !== testWords[completedCount]) playSound(els.errorSound); if (event.key === 'Backspace') { event.preventDefault(); els.input.value=els.input.value.slice(0,-1); update(); return; } if (event.key.length === 1) { event.preventDefault(); els.input.value+=event.key; processTyping(); } });
+function finish(){ if(finished)return; finished=true; clearInterval(interval); els.timer.textContent=formatTime(Math.max(0,duration-Math.floor((Date.now()-startedAt)/1000))); els.input.disabled=true; update(); const s=stats(); els.finalWpm.textContent=s.wpm; els.resultCopy.textContent=`Accuracy ${s.accuracy}% · ${s.errors} ${s.errors === 1 ? 'error' : 'errors'} · ${s.correctWords} correct ${s.correctWords === 1 ? 'word' : 'words'}`; els.card.classList.remove('hidden'); els.card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function reset(){ clearInterval(interval); testWords=pickWords(); typedWords=[]; startedAt=null; finished=false; completedCount=0;totalKeys=0;errorKeys=0;els.input.disabled=false;els.input.value='';els.timer.textContent=formatTime(duration);els.wpm.textContent='0';els.completedWords.textContent='0';els.characters.textContent='0';els.modeLength.textContent=duration;els.card.classList.add('hidden');renderWords();requestAnimationFrame(()=>{measureFirstLine();els.words.focus();}); }
+els.words.addEventListener('keydown', event => {
+  if (finished || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === 'Backspace') {
+    event.preventDefault(); playSound(els.typingSound);
+    if (els.input.value) els.input.value = els.input.value.slice(0, -1);
+    else if (completedCount > 0) { completedCount--; els.input.value = typedWords.pop() || ''; }
+    update(); return;
+  }
+  if (event.key === ' ') {
+    event.preventDefault();
+    const typed = els.input.value;
+    if (!typed) return;
+    start();
+    if (typed !== testWords[completedCount]) playSound(els.errorSound);
+    typedWords[completedCount] = typed; completedCount++; els.input.value = '';
+    update();
+    if (completedCount >= testWords.length) finish();
+    return;
+  }
+  if (event.key.length === 1) {
+    event.preventDefault();
+    const ref = testWords[completedCount] || '';
+    if (els.input.value.length >= ref.length + 8) return;
+    playSound(els.typingSound); start();
+    totalKeys++; if (event.key !== ref[els.input.value.length]) errorKeys++;
+    els.input.value += event.key; update();
+  }
+});
 els.words.addEventListener('click', () => els.words.focus());
 els.soundToggle.addEventListener('click', () => { soundsMuted=!soundsMuted; els.soundToggle.setAttribute('aria-pressed', soundsMuted); els.soundToggle.setAttribute('aria-label', soundsMuted ? 'Unmute typing sounds' : 'Mute typing sounds'); els.soundToggle.innerHTML=soundsMuted ? '🔇 <span>Sound off</span>' : '🔊 <span>Sound on</span>'; });
 document.querySelectorAll('.mode').forEach(button=>button.addEventListener('click',()=>{document.querySelector('.mode.active').classList.remove('active');button.classList.add('active');duration=Number(button.dataset.seconds);reset();}));

@@ -58,19 +58,21 @@ function measureFirstLine() {
 function formatTime(sec) { return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
 function stats() {
   const current = [...els.input.value];
-  let correctChars = 0, correctWords = 0;
+  let correctChars = 0, correctWords = 0, goodLetters = 0, redLetters = 0;
   for (let w = 0; w < completedCount; w++) {
     const typed = [...(typedWords[w] || '')], ref = [...testWords[w]];
     typed.forEach((ch, i) => { if (ch === ref[i]) correctChars++; });
     if (typed.join('') === ref.join('')) { correctChars++; correctWords++; }
+    // Accuracy only looks at what is on screen now: red (wrong or skipped) letters vs. correct letters.
+    for (let i = 0; i < Math.max(typed.length, ref.length); i++) { if (typed[i] === ref[i]) goodLetters++; else redLetters++; }
   }
   const ref = [...(testWords[completedCount] || '')];
-  current.forEach((ch, i) => { if (ch === ref[i]) correctChars++; });
+  current.forEach((ch, i) => { if (ch === ref[i]) { correctChars++; goodLetters++; } else redLetters++; });
   const elapsedMs = startedAt ? Math.min(Date.now() - startedAt, duration * 1000) : 0;
   const elapsed = elapsedMs ? Math.max(elapsedMs / 60000, 1 / 60) : 0;
   const wpm = elapsed ? Math.round((correctChars / 5) / elapsed) : 0;
-  const accuracy = totalKeys ? Math.round((totalKeys - errorKeys) / totalKeys * 100) : 100;
-  return {completed: completedCount, correctWords, correctChars, wpm, accuracy, errors: errorKeys};
+  const accuracy = goodLetters + redLetters ? Math.round(goodLetters / (goodLetters + redLetters) * 100) : 100;
+  return {completed: completedCount, correctWords, correctChars, wpm, accuracy, errors: redLetters};
 }
 function keepCurrentWordVisible() {
   if (!window.matchMedia('(max-width: 680px)').matches) { els.words.scrollTop = 0; return; }

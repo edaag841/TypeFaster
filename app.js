@@ -10,17 +10,18 @@ const wordBanks = {
 const els = {
   words: document.querySelector('#words'), input: document.querySelector('#typingInput'), timer: document.querySelector('#timer'),
   wpm: document.querySelector('#wpm'), completedWords: document.querySelector('#completedWords'),
-  characters: document.querySelector('#characters'), modeLength: document.querySelector('#modeLength'), stage: document.querySelector('#testStage'),
+  accuracy: document.querySelector('#accuracy'), finalAccuracy: document.querySelector('#finalAccuracy'), modeLength: document.querySelector('#modeLength'), stage: document.querySelector('#testStage'),
   card: document.querySelector('#resultCard'), finalWpm: document.querySelector('#finalWpm'), resultCopy: document.querySelector('#resultCopy'), language: document.querySelector('#languageSelect'), typingSound: document.querySelector('#typingSound'), errorSound: document.querySelector('#errorSound'), soundToggle: document.querySelector('#soundToggle')
 };
 let duration = 60, testWords = [], typedWords = [], startedAt = null, interval = null, finished = false, firstLineWordCount = 1, completedCount = 0, totalKeys = 0, errorKeys = 0, soundsMuted = false;
-const isTouch = window.matchMedia('(pointer: coarse)').matches;
+const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 let firstLoad = true;
 const SENT = '​';
 const mobileInput = document.createElement('input');
 mobileInput.type = 'text'; mobileInput.value = SENT; mobileInput.className = 'mobile-input';
 mobileInput.setAttribute('autocomplete', 'off'); mobileInput.setAttribute('autocorrect', 'off'); mobileInput.setAttribute('autocapitalize', 'off');
 mobileInput.setAttribute('spellcheck', 'false'); mobileInput.setAttribute('enterkeyhint', 'done'); mobileInput.setAttribute('aria-label', 'Type the words here');
+if (isTouch) mobileInput.classList.add('overlay');
 els.words.parentElement.appendChild(mobileInput);
 function focusTyping() { if (finished) return; if (isTouch) mobileInput.focus({preventScroll: true}); else els.words.focus(); }
 function pickWords() { const wordBank = wordBanks[els.language.value].split(' '); return Array.from({length: 76}, () => wordBank[Math.floor(Math.random() * wordBank.length)]); }
@@ -79,12 +80,12 @@ function keepCurrentWordVisible() {
 function update() {
   const s = stats();
   renderWords();
-  els.wpm.textContent = s.wpm; els.completedWords.textContent = s.correctWords; els.characters.textContent = totalKeys;
+  els.wpm.textContent = s.wpm; els.completedWords.textContent = s.correctWords; els.accuracy.textContent = s.accuracy;
   keepCurrentWordVisible();
 }
 function start(){ if(startedAt || finished) return; startedAt=Date.now(); interval=setInterval(()=>{ const remaining=Math.max(0,duration-Math.floor((Date.now()-startedAt)/1000)); els.timer.textContent=formatTime(remaining); update(); if(!remaining) finish(); },250); }
-function finish(){ if(finished)return; finished=true; clearInterval(interval); els.timer.textContent=formatTime(Math.max(0,duration-Math.floor((Date.now()-startedAt)/1000))); els.input.disabled=true; mobileInput.blur(); update(); const s=stats(); els.finalWpm.textContent=s.wpm; els.resultCopy.textContent=`Accuracy ${s.accuracy}% · ${s.errors} ${s.errors === 1 ? 'error' : 'errors'} · ${s.correctWords} correct ${s.correctWords === 1 ? 'word' : 'words'}`; els.card.classList.remove('hidden'); els.card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function reset(){ clearInterval(interval); testWords=pickWords(); typedWords=[]; startedAt=null; finished=false; completedCount=0;totalKeys=0;errorKeys=0;els.input.disabled=false;els.input.value='';els.timer.textContent=formatTime(duration);els.wpm.textContent='0';els.completedWords.textContent='0';els.characters.textContent='0';els.modeLength.textContent=duration;els.card.classList.add('hidden');renderWords();els.words.scrollTop=0;requestAnimationFrame(()=>{measureFirstLine();if(!(isTouch && firstLoad))focusTyping();firstLoad=false;}); }
+function finish(){ if(finished)return; finished=true; clearInterval(interval); els.timer.textContent=formatTime(Math.max(0,duration-Math.floor((Date.now()-startedAt)/1000))); els.input.disabled=true; mobileInput.blur(); update(); const s=stats(); els.finalWpm.textContent=s.wpm; els.finalAccuracy.textContent=s.accuracy; els.resultCopy.textContent=`${s.errors} ${s.errors === 1 ? 'error' : 'errors'} · ${s.correctWords} correct ${s.correctWords === 1 ? 'word' : 'words'}`; els.card.classList.remove('hidden'); els.card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function reset(){ clearInterval(interval); testWords=pickWords(); typedWords=[]; startedAt=null; finished=false; completedCount=0;totalKeys=0;errorKeys=0;els.input.disabled=false;els.input.value='';els.timer.textContent=formatTime(duration);els.wpm.textContent='0';els.completedWords.textContent='0';els.accuracy.textContent='100';els.modeLength.textContent=duration;els.card.classList.add('hidden');renderWords();els.words.scrollTop=0;requestAnimationFrame(()=>{measureFirstLine();if(!(isTouch && firstLoad))focusTyping();firstLoad=false;}); }
 function handleBackspace() {
   playSound(els.typingSound);
   if (els.input.value) els.input.value = els.input.value.slice(0, -1);

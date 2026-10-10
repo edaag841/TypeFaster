@@ -104,11 +104,14 @@ function handleSpace() {
   if (completedCount >= testWords.length) finish();
 }
 function handleChar(ch) {
-  const ref = testWords[completedCount] || '';
-  if (els.input.value.length >= ref.length + 8) return;
+  const ref = [...(testWords[completedCount] || '')];
+  const typed = [...els.input.value];
+  if (typed.length >= ref.length) return; // no extra letters past the end of the word
   playSound(els.typingSound); start();
-  totalKeys++; if (ch !== ref[els.input.value.length]) errorKeys++;
-  els.input.value += ch; update();
+  totalKeys++; if (ch !== ref[typed.length]) errorKeys++;
+  typed.push(ch); els.input.value = typed.join(''); update();
+  // Every letter of the word typed wrong: move on to the next word automatically
+  if (typed.length === ref.length && typed.every((c, i) => c !== ref[i])) handleSpace();
 }
 // Desktop keyboards
 els.words.addEventListener('keydown', event => {

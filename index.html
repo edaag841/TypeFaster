@@ -3,12 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A calm, fast typing test that works without an account." />
-    <title>typefaster — Free Typing Test</title>
+    <meta name="description" content="Free typing test in 7 languages. Measure your WPM and accuracy in 30 seconds, 1 minute or 2 minutes. No account needed." />
+    <link rel="canonical" href="https://typefaster5.com/" />
+    <meta name="theme-color" content="#879ee5" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="typefaster" />
+    <meta property="og:title" content="Free Typing Test (30 sec, 1 min, 2 min) | typefaster" />
+    <meta property="og:description" content="Test your typing speed and accuracy in 7 languages. Free, fast and no account needed." />
+    <meta property="og:url" content="https://typefaster5.com/" />
+    <meta property="og:image" content="https://typefaster5.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Free Typing Test | typefaster" />
+    <meta name="twitter:description" content="Test your typing speed and accuracy in 7 languages. Free, fast and no account needed." />
+    <meta name="twitter:image" content="https://typefaster5.com/og-image.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23879ee5'/%3E%3Cpath d='M22 42 42 22M26 22h16v16' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"typefaster","url":"https://typefaster5.com/","description":"A free typing speed test with 30 second, 1 minute and 2 minute modes in 7 languages.","applicationCategory":"EducationalApplication","operatingSystem":"Any","inLanguage":["en","de","tr","fr","es","it","pl"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+    <title>Free Typing Test (30 sec, 1 min, 2 min) | typefaster</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=4" />
+    <link rel="stylesheet" href="styles.css?v=6" />
   </head>
   <body>
     <header class="site-header">
@@ -19,6 +35,7 @@
 
     <main>
       <section class="hero" id="practice">
+        <h1 class="sr-only">Free typing test: check your typing speed (WPM) and accuracy</h1>
         <div class="eyebrow"><span></span> a better way to practice</div>
         <p class="intro">A focused typing test that measures speed, accuracy, and consistency — no account needed.</p>
       </section>
@@ -52,11 +69,27 @@
         </div>
       </section>
 
-      <section class="result-card hidden" id="resultCard" aria-live="polite">
-        <div><div class="eyebrow"><span></span> test complete</div><h2>Nice rhythm.</h2><p id="resultCopy">Here’s how your test went.</p></div>
-        <div class="result-scores"><div class="result-score"><strong id="finalWpm">0</strong><span>WPM</span></div><div class="result-score"><strong id="finalAccuracy">100</strong><span>ACCURACY %</span></div></div>
-        <button class="primary-button" id="tryAgain">Try again <span>→</span></button>
-      </section>
+      <div class="result-overlay hidden" id="resultCard" role="dialog" aria-modal="true" aria-labelledby="resultTitle" tabindex="-1">
+        <div class="result-panel">
+          <div class="eyebrow"><span></span> test complete</div>
+          <h2 id="resultTitle">Time's up!</h2>
+          <p class="result-sub" id="resultCopy">Here's how your test went.</p>
+          <div class="result-main">
+            <div class="big"><strong id="finalWpm">0</strong><span>WPM</span></div>
+            <div class="big"><strong id="finalAccuracy">100</strong><span>ACCURACY %</span></div>
+          </div>
+          <div class="result-grid">
+            <div><span>Correct words</span><strong id="finalWords">0</strong></div>
+            <div><span>Errors</span><strong id="finalErrors">0</strong></div>
+            <div><span>Correct characters</span><strong id="finalChars">0</strong></div>
+            <div><span>Test length</span><strong id="finalTime">60 sec</strong></div>
+          </div>
+          <div class="result-actions">
+            <button class="primary-button" id="tryAgain">Try again <span>→</span></button>
+            <button class="link-button" id="closeResult">Close</button>
+          </div>
+        </div>
+      </div>
 
       <section class="benefits" id="how-it-works">
         <div><span class="number">01</span><h2>Just begin.</h2><p>Select a duration and type the words as they appear. The timer starts on your first keystroke.</p></div>
@@ -64,9 +97,9 @@
         <div><span class="number">03</span><h2>Come back sharper.</h2><p>Short, repeatable sessions build muscle memory without turning practice into a chore.</p></div>
       </section>
     </main>
-    <footer>TYPEFASTER <span>•</span> PRACTICE WITH PURPOSE</footer>
+    <footer>TYPEFASTER <span>•</span> PRACTICE WITH PURPOSE <span>•</span> <a href="privacy.html">PRIVACY</a></footer>
     <audio id="typingSound" src="typing-tick.wav" preload="auto"></audio>
     <audio id="errorSound" src="error-thock.wav" preload="auto"></audio>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=6"></script>
   </body>
 </html>

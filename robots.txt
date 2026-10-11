@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://typefaster5.com/sitemap.xml
